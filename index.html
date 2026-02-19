@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Mi-4ZzdgznONVkI9B5TQMqTpNY3nEj84TqwPXPLjang" />
+    <title>FINGER GAMES</title>
+    <style>
+        /* 기본 스타일 설정 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            background-color: #2d2148; /* 요청하신 배경색 */
+            color: #b7d3eb; /* 요청하신 글자색 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 90%;
+            padding: 60px 0;
+        }
+
+        /* 로고 영역 */
+        .logo {
+            margin-bottom: 40px;
+        }
+        .logo img {
+            max-width: 280px;
+            height: auto;
+        }
+
+        /* 소개 및 상세 텍스트 공통 */
+        .intro-text, .details-text {
+            font-size: 16px;
+            line-height: 1.9;
+            font-weight: 400;
+        }
+
+        .intro-text { margin-bottom: 50px; }
+        .details-text { margin-bottom: 70px; font-size: 15px; }
+
+        /* 강조 텍스트 스타일 */
+        strong {
+            font-weight: 800;
+            color: #ffffff; /* 가독성을 위해 흰색 강조 */
+        }
+
+        /* 게임 메인 이미지 영역 */
+        .game-banner {
+            margin-bottom: 50px;
+        }
+        .game-banner img {
+            width: 100%;
+            max-width: 700px;
+            height: auto;
+            border-radius: 2px;
+            image-rendering: -webkit-optimize-contrast; 
+        }
+
+        /* 푸터 영역 */
+        footer {
+            font-size: 12px;
+            color: #7a6e91;
+            margin-top: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        /* 다국어 제어: 기본적으로 영어는 숨김 */
+        .lang-en { display: none; }
+
+        /* 모바일 대응 */
+        @media (max-width: 600px) {
+            .intro-text { font-size: 14px; }
+            .details-text { font-size: 13px; }
+            .logo img { max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="logo">
+            <img src="https://github.com/studio-fingergames/fingergames/blob/main/FINGERGAMES_logo.png?raw=true" alt="FINGER GAMES LOGO">
+        </div>
+
+        <div class="intro-text">
+            <div class="lang-ko">
+                <p>게임은 결국 <strong>손가락</strong>으로 해야 한다.</p>
+                <p>그래야 제맛이다.</p>
+                <p>추억의 향수가 지워지지 않게,</p>
+                <p><strong>레트로</strong>하고 <strong>캐주얼</strong>한 게임들을 만들고자 하는</p>
+                <p><strong>1인 개발</strong> 스튜디오입니다</p>
+            </div>
+            <div class="lang-en">
+                <p>In the end, games are meant to be played with your <strong>fingers</strong>.</p>
+                <p>That's how they should feel.</p>
+                <p>To keep the nostalgia alive,</p>
+                <p>I am a <strong>solo development</strong> studio</p>
+                <p>creating <strong>retro</strong> and <strong>casual</strong> games.</p>
+            </div>
+        </div>
+
+        <div class="game-banner">
+            <img src="https://github.com/studio-fingergames/fingergames/blob/main/boosterup.png?raw=true" alt="BOOSTER UP GAME IMAGE">
+        </div>
+
+        <div class="details-text">
+            <div class="lang-ko">
+                <p>현재 개발중인 게임, <strong>부스터 업</strong>은</p>
+                <p>누구나 간단하게 즐길 수 있는 <strong>3버튼 아케이드 게임</strong>으로</p>
+                <p><strong>안드로이드</strong> 및 <strong>스팀</strong>에 서비스 예정입니다.</p>
+            </div>
+            <div class="lang-en">
+                <p>The game currently in development, <strong>Booster Up</strong>,</p>
+                <p>is a <strong>3-button arcade game</strong> that anyone can easily enjoy.</p>
+                <p>It is scheduled to be released on <strong>Android</strong> and <strong>Steam</strong>.</p>
+            </div>
+        </div>
+
+        <footer>
+            Copyright © 2026 FINGER GAMES. All rights reserved.
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            // 브라우저 언어 확인 (앞 두 글자만 추출: 'ko', 'en' 등)
+            const userLang = (navigator.language || navigator.userLanguage).substring(0, 2);
+            
+            // 한국어가 아니라면 영어 모드 활성화
+            if (userLang !== 'ko') {
+                document.querySelectorAll('.lang-ko').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.lang-en').forEach(el => el.style.display = 'block');
+            }
+        })();
+    </script>
+
+</body>
+</html>
