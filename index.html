@@ -933,8 +933,7 @@
   let targetY = 0;
   let wheelSum = 0;         // wheel delta accumulated since the last settle
   let settleTimer = 0;
-  let touchGesture = null;
-  let mouseDrag = null;
+  let drag = null;          // active press: { y, lastY, t, startScroll, moved }
 
   function sectionTop(section) {
     return Math.round(section.getBoundingClientRect().top + window.scrollY);
@@ -953,7 +952,7 @@
       return;
     }
     posY += (targetY - posY) * (1 - Math.exp(-dt / glideMs));
-    window.scrollTo(0, posY);
+    window.scrollTo(0, Math.round(posY));
     animFrame = requestAnimationFrame(tick);
   }
   function glideTo(y) {
@@ -1011,59 +1010,66 @@
     requestSettle(90);
   }, { passive: false });
 
-  window.addEventListener('touchstart', (event) => {
-    if (event.touches.length !== 1 || event.target.closest('.content-scroll')) return;
-    cancelAnim();
-    holding = true;
-    touchGesture = { y: event.touches[0].clientY, t: performance.now() };
-  }, { passive: true });
-  window.addEventListener('touchend', (event) => {
-    if (!touchGesture) return;
-    const gesture = touchGesture;
-    touchGesture = null;
-    release(gesture, event.changedTouches[0].clientY);
-  }, { passive: true });
-  window.addEventListener('touchcancel', () => {
-    touchGesture = null;
-    holding = false;
-    settle(0);
-  }, { passive: true });
+  // Touch and mouse share one drag path. Touch drags block the browser's own scroll
+  // (and its momentum) so only our glide moves the page.
+  let suppressClickUntil = 0;
+  document.addEventListener('click', (event) => {
+    if (performance.now() < suppressClickUntil) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
 
-  // PC: click-drag scroll
-  function swallowClick(event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-  function endMouseDrag() {
-    if (!mouseDrag) return;
-    const drag = mouseDrag;
-    mouseDrag = null;
-    if (!drag.moved) return;
-    document.body.classList.remove('is-dragging');
-    document.addEventListener('click', swallowClick, { capture: true, once: true });
-    release(drag, drag.lastY);
-  }
-  window.addEventListener('mousedown', (event) => {
-    if (event.button !== 0 || event.target.closest('a, button, input, textarea, select, label, .content-scroll')) return;
+  function dragStart(y) {
     cancelAnim();
-    mouseDrag = { y: event.clientY, lastY: event.clientY, t: performance.now(), startScroll: window.scrollY, moved: false };
-  });
-  window.addEventListener('mousemove', (event) => {
-    if (!mouseDrag) return;
-    const dy = event.clientY - mouseDrag.y;
-    if (!mouseDrag.moved) {
-      if (Math.abs(dy) < 5) return;
-      mouseDrag.moved = true;
+    drag = { y, lastY: y, t: performance.now(), startScroll: window.scrollY, moved: false };
+  }
+  function dragMove(y, event) {
+    if (!drag) return;
+    const dy = y - drag.y;
+    if (!drag.moved) {
+      if (Math.abs(dy) < 3) return;
+      drag.moved = true;
       holding = true;
       document.body.classList.add('is-dragging');
     }
-    event.preventDefault();
-    mouseDrag.lastY = event.clientY;
-    window.scrollTo(0, mouseDrag.startScroll - dy);
+    if (event.cancelable) event.preventDefault();
+    drag.lastY = y;
+    window.scrollTo(0, Math.round(drag.startScroll - dy));
+  }
+  function dragEnd() {
+    if (!drag) return;
+    const finished = drag;
+    drag = null;
+    if (!finished.moved) return;
+    document.body.classList.remove('is-dragging');
+    suppressClickUntil = performance.now() + 50;
+    release(finished, finished.lastY);
+  }
+
+  window.addEventListener('touchstart', (event) => {
+    if (event.touches.length !== 1) {   // pinch etc.: abandon the drag
+      drag = null;
+      holding = false;
+      return;
+    }
+    if (event.target.closest('.content-scroll')) return;
+    dragStart(event.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchmove', (event) => {
+    if (drag) dragMove(event.touches[0].clientY, event);
+  }, { passive: false });
+  window.addEventListener('touchend', dragEnd, { passive: true });
+  window.addEventListener('touchcancel', dragEnd, { passive: true });
+
+  window.addEventListener('mousedown', (event) => {
+    if (event.button !== 0 || event.target.closest('a, button, input, textarea, select, label, .content-scroll')) return;
+    dragStart(event.clientY);
   });
-  window.addEventListener('mouseup', endMouseDrag);
-  window.addEventListener('mouseleave', endMouseDrag);
-  window.addEventListener('blur', endMouseDrag);
+  window.addEventListener('mousemove', (event) => dragMove(event.clientY, event));
+  window.addEventListener('mouseup', dragEnd);
+  window.addEventListener('mouseleave', dragEnd);
+  window.addEventListener('blur', dragEnd);
 
   // Tabs and browser history share the same section anchors.
   navLinks.forEach(link => {
