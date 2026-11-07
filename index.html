@@ -938,6 +938,11 @@
   function sectionTop(section) {
     return Math.round(section.getBoundingClientRect().top + window.scrollY);
   }
+  // Round to device pixels (not CSS px) so motion steps stay 1 physical pixel on high-DPR screens.
+  function devicePx(y) {
+    const dpr = window.devicePixelRatio || 1;
+    return Math.round(y * dpr) / dpr;
+  }
   function cancelAnim() {
     if (!animFrame) return;
     cancelAnimationFrame(animFrame);
@@ -952,7 +957,7 @@
       return;
     }
     posY += (targetY - posY) * (1 - Math.exp(-dt / glideMs));
-    window.scrollTo(0, Math.round(posY));
+    window.scrollTo(0, devicePx(posY));
     animFrame = requestAnimationFrame(tick);
   }
   function glideTo(y) {
@@ -1020,25 +1025,34 @@
     }
   }, true);
 
+  // Input events only record the pointer; the page moves once per frame.
+  let dragFrame = 0;
+  function applyDrag() {
+    dragFrame = 0;
+    if (drag) window.scrollTo(0, devicePx(drag.startScroll - (drag.lastY - drag.y)));
+  }
   function dragStart(y) {
     cancelAnim();
     drag = { y, lastY: y, t: performance.now(), startScroll: window.scrollY, moved: false };
   }
   function dragMove(y, event) {
     if (!drag) return;
-    const dy = y - drag.y;
     if (!drag.moved) {
-      if (Math.abs(dy) < 3) return;
+      if (Math.abs(y - drag.y) < 3) return;
       drag.moved = true;
       holding = true;
       document.body.classList.add('is-dragging');
     }
     if (event.cancelable) event.preventDefault();
     drag.lastY = y;
-    window.scrollTo(0, Math.round(drag.startScroll - dy));
+    if (!dragFrame) dragFrame = requestAnimationFrame(applyDrag);
   }
   function dragEnd() {
     if (!drag) return;
+    if (dragFrame) {            // flush the last recorded position before deciding
+      cancelAnimationFrame(dragFrame);
+      applyDrag();
+    }
     const finished = drag;
     drag = null;
     if (!finished.moved) return;
