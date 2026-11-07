@@ -30,6 +30,7 @@
 
   * { box-sizing: border-box; }
   html {
+    /* Full-screen desktop sections snap firmly via the browser's native engine. */
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
   }
@@ -126,7 +127,8 @@
     height: 100vh;
     height: 100dvh;
     scroll-snap-align: start;
-    scroll-snap-stop: always;
+    /* Normal allows long/fast scrolls without trapping the user in every section. */
+    scroll-snap-stop: normal;
     position: relative;
     overflow: hidden;
   }
@@ -195,6 +197,8 @@
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
     background: var(--bg);
+    /* Clip moving videos/gradients without creating a scroll container. */
+    overflow: clip;
   }
   .game.booster {
     background:
@@ -206,7 +210,8 @@
       radial-gradient(ellipse 55% 80% at 15% 50%, rgba(40, 80, 120, 0.28), transparent 65%),
       #100e1c;
   }
-  /* Text-side half-screen fade: edge alpha1 → center alpha0 (portrait + landscape) */
+  /* Text-side fade follows the visible edge of its video.
+     The edge is clamped to the viewport when the video is cropped. */
   .game::before {
     content: "";
     position: absolute;
@@ -217,7 +222,7 @@
     pointer-events: none;
   }
   .booster::before {
-    left: 0;
+    left: var(--fade-edge, 0px);
     background: linear-gradient(
       to right,
       rgba(26, 18, 48, 1) 0%,
@@ -225,7 +230,7 @@
     );
   }
   .grim::before {
-    right: 0;
+    right: var(--fade-edge, 0px);
     left: auto;
     background: linear-gradient(
       to left,
@@ -335,16 +340,19 @@
     width: auto;
     max-width: none;
     display: block;
+    flex-shrink: 0;
     object-fit: cover;
     background: #000;
+    /* At wide aspect ratios this is 0; taller screens pan toward the gameplay. */
+    transform: translateX(var(--video-shift, 0px));
   }
 
 
 
-  /* Portrait / narrow: free scroll + full-height video bg (L/R aligned) */
+  /* Portrait / narrow: native proximity snap, allowing tall text to scroll freely. */
   @media (max-width: 900px), (orientation: portrait) {
     html {
-      scroll-snap-type: none;
+      scroll-snap-type: y proximity;
     }
     .snap {
       height: auto;
@@ -357,6 +365,7 @@
     .game {
       display: block;
       position: relative;
+      overflow: clip;
     }
     .booster .copy,
     .grim .copy {
@@ -497,7 +506,7 @@
   </section>
 
   <!-- 2. Booster Up: text left / video right -->
-  <section class="snap game booster" id="boosterup">
+  <section class="snap game booster" id="boosterup" data-focus-x="0.70">
     <div class="copy">
       <div class="eyebrow">01 / Arcade</div>
       <h2>BOOSTER UP</h2>
@@ -562,7 +571,7 @@
   </section>
 
   <!-- 3. Grim Dungeon: video left / text right -->
-  <section class="snap game grim" id="grimdungeon">
+  <section class="snap game grim" id="grimdungeon" data-focus-x="0.25">
     <div class="stage" aria-hidden="true">
       <video
         src="https://studio-fingergames.github.io/grimdungeon.mp4"
@@ -657,87 +666,126 @@
 
   const navLinks = Array.from(document.querySelectorAll('.top-nav a[data-nav]'));
   const sections = Array.from(document.querySelectorAll('section.snap'));
+  const videos = Array.from(document.querySelectorAll('section.game video'));
+  const gameSections = sections.filter(section => section.classList.contains('game'));
+
+  // At 1.65:1 and wider, retain the original left/right video alignment.
+  // As the viewport gets taller, ease the gameplay center toward 50% of the screen.
+  // The focal positions (data-focus-x) are relative to each FULL video, not the screen.
+  function updateVideoLayout() {
+    const viewportRatio = window.innerWidth / Math.max(window.innerHeight, 1);
+    const ratioProgress = Math.max(0, Math.min(1, (1.65 - viewportRatio) / (1.65 - 0.8)));
+    const centering = ratioProgress * ratioProgress * (3 - 2 * ratioProgress);
+
+    gameSections.forEach(section => {
+      const video = section.querySelector('video');
+      if (!video) return;
+
+      const screenWidth = section.getBoundingClientRect().width;
+      const videoWidth = video.getBoundingClientRect().width;
+      if (screenWidth <= 0 || videoWidth <= 0) return;
+
+      const isBooster = section.classList.contains('booster');
+      const focalX = Number(section.dataset.focusX) || 0.5;
+      // The original layout anchors Booster's video to the right, Grim's to the left.
+      const originalLeft = isBooster ? screenWidth - videoWidth : 0;
+      const focalCenter = originalLeft + videoWidth * focalX;
+      const shift = (screenWidth / 2 - focalCenter) * centering;
+      const videoLeft = originalLeft + shift;
+      const videoRight = videoLeft + videoWidth;
+
+      video.style.setProperty('--video-shift', `${shift.toFixed(2)}px`);
+
+      // Booster: attach fade to the left video edge; Grim: to the right edge.
+      // If the edge is outside the viewport, attach it to the viewport edge instead.
+      const distanceFromSide = isBooster ? videoLeft : screenWidth - videoRight;
+      const clampedEdge = Math.max(0, Math.min(screenWidth, distanceFromSide));
+      section.style.setProperty('--fade-edge', `${clampedEdge.toFixed(2)}px`);
+    });
+  }
+
+  let videoLayoutQueued = false;
+  function scheduleVideoLayout() {
+    if (videoLayoutQueued) return;
+    videoLayoutQueued = true;
+    requestAnimationFrame(() => {
+      videoLayoutQueued = false;
+      updateVideoLayout();
+    });
+  }
+
+  // Intrinsic video size may not be available on the initial paint.
+  videos.forEach(video => video.addEventListener('loadedmetadata', scheduleVideoLayout));
+  window.addEventListener('resize', scheduleVideoLayout, { passive: true });
+  window.addEventListener('orientationchange', scheduleVideoLayout);
+  window.addEventListener('load', scheduleVideoLayout);
+  if ('ResizeObserver' in window) {
+    const layoutObserver = new ResizeObserver(scheduleVideoLayout);
+    gameSections.forEach(section => layoutObserver.observe(section));
+  }
+  scheduleVideoLayout();
+
+  let activeSectionId = null;
+  let syncQueued = false;
+
   function setActiveNav(id) {
+    if (activeSectionId === id) return;
+    activeSectionId = id;
     navLinks.forEach(a => {
       a.classList.toggle('is-active', a.getAttribute('data-nav') === id);
     });
   }
 
-  function isPortraitLayout() {
-    return window.matchMedia('(max-width: 900px), (orientation: portrait)').matches;
-  }
-
-  // Portrait drag: snap to same section tops as tab anchors
-  let snapLock = false;
-  let snapTimer = null;
-  function snapToNearestSection() {
-    if (!isPortraitLayout() || snapLock || !sections.length) return;
-    const y = window.scrollY || window.pageYOffset;
-    let best = sections[0];
-    let bestDist = Infinity;
-    for (let i = 0; i < sections.length; i++) {
-      const dist = Math.abs(sections[i].offsetTop - y);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = sections[i];
+  // Highlight the section covering the viewport center, not the section
+  // whose TOP happens to be closest. Works even when mobile text is taller
+  // than the screen. CSS handles the snap; JS never forces scroll position.
+  function getVisibleSection() {
+    const midpoint = window.innerHeight / 2;
+    let closest = null;
+    let closestDistance = Infinity;
+    for (const section of sections) {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= midpoint && rect.bottom > midpoint) return section;
+      const distance = Math.min(Math.abs(rect.top - midpoint), Math.abs(rect.bottom - midpoint));
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = section;
       }
     }
-    if (bestDist < 12) return;
-    snapLock = true;
-    const top = best.offsetTop;
-    window.scrollTo({ top: top, behavior: 'smooth' });
-    if (best.id) {
-      try { history.replaceState(null, '', '#' + best.id); } catch (e) {}
-      setActiveNav(best.id);
-    }
-    const unlock = () => { snapLock = false; };
-    if ('onscrollend' in window) {
-      window.addEventListener('scrollend', unlock, { once: true });
-    } else {
-      setTimeout(unlock, 500);
-    }
+    return closest;
   }
-  function schedulePortraitSnap() {
-    if (!isPortraitLayout() || snapLock) return;
-    clearTimeout(snapTimer);
-    snapTimer = setTimeout(snapToNearestSection, 100);
-  }
-  window.addEventListener('scroll', schedulePortraitSnap, { passive: true });
-  window.addEventListener('scrollend', () => {
-    if (!snapLock) snapToNearestSection();
-  });
-  navLinks.forEach(a => {
-    a.addEventListener('click', () => {
-      snapLock = true;
-      clearTimeout(snapTimer);
-      setTimeout(() => { snapLock = false; }, 700);
+
+  function syncVisibleSection() {
+    const section = getVisibleSection();
+    if (!section) return;
+    setActiveNav(section.id);
+
+    // Only the video belonging to the visible section may play.
+    const selectedVideo = document.hidden ? null : section.querySelector('video');
+    videos.forEach(video => {
+      if (video === selectedVideo) {
+        if (video.paused) video.play().catch(() => {});
+      } else if (!video.paused) {
+        video.pause();
+      }
     });
-  });
-
-  if ('IntersectionObserver' in window) {
-    const sectionIo = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting || entry.intersectionRatio < 0.45) return;
-        const id = entry.target.id;
-        if (id) setActiveNav(id);
-
-        if (!entry.target.classList.contains('game')) {
-          document.querySelectorAll('section.game video').forEach(v => v.pause());
-          return;
-        }
-        const video = entry.target.querySelector('video');
-        if (!video) return;
-        document.querySelectorAll('section.game video').forEach(v => {
-          if (v !== video) v.pause();
-        });
-        video.play().catch(() => {});
-      });
-    }, { threshold: [0.45, 0.6] });
-
-    sections.forEach(sec => sectionIo.observe(sec));
-  } else {
-    setActiveNav('home');
   }
+
+  function scheduleVisibleSectionSync() {
+    if (syncQueued) return;
+    syncQueued = true;
+    requestAnimationFrame(() => {
+      syncQueued = false;
+      syncVisibleSection();
+    });
+  }
+
+  window.addEventListener('scroll', scheduleVisibleSectionSync, { passive: true });
+  window.addEventListener('resize', scheduleVisibleSectionSync);
+  window.addEventListener('load', scheduleVisibleSectionSync);
+  window.addEventListener('hashchange', scheduleVisibleSectionSync);
+  document.addEventListener('visibilitychange', scheduleVisibleSectionSync);
+  scheduleVisibleSectionSync();
 })();
 </script>
 </body>
