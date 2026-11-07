@@ -199,12 +199,17 @@
     font-size: 0.78rem;
   }
   @media (max-width: 600px) {
+    /* Narrow screens: spacing and text shrink with the width so the bar never overflows. */
     .top-nav {
-      gap: 12px;
-      padding: 10px 12px;
+      gap: clamp(6px, 2vw, 12px);
+      padding: 10px clamp(8px, 2.5vw, 12px);
     }
     .top-nav a,
-    .lang-toggle { font-size: 0.74rem; }
+    .lang-toggle {
+      font-size: clamp(0.56rem, 2.75vw, 0.74rem);
+      letter-spacing: 0;
+    }
+    .lang-toggle { gap: 4px; }
     footer.site {
       padding: 8px 12px;
       font-size: 12px;
