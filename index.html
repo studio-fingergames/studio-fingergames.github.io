@@ -234,8 +234,9 @@
     display: grid;
     place-items: center;
     text-align: center;
+    /* Bottom padding reserves room for the scroll hint pinned above the footer. */
     padding: max(8vh, calc(var(--nav-height, 48px) + 12px)) 6vw
-             max(8vh, calc(var(--footer-height, 48px) + 12px));
+             max(8vh, calc(var(--footer-height, 48px) + 64px));
     background:
       radial-gradient(ellipse 70% 55% at 50% 20%, rgba(90, 60, 150, 0.35), transparent 70%),
       linear-gradient(180deg, #2d2148 0%, var(--bg-deep) 100%);
@@ -253,9 +254,9 @@
     margin-bottom: 4vh;
   }
   .company p {
-    margin: 0.35em 0;
+    margin: 0.1em 0;
     font-size: clamp(0.95rem, 1.8vw, 1.15rem);
-    line-height: 1.85;
+    line-height: 1.55;
   }
   .company strong { color: var(--white); font-weight: 700; }
   .company-foot {
@@ -274,13 +275,20 @@
     padding-bottom: 2px;
   }
   .company-foot a:hover { color: var(--white); }
+  /* Scroll hint: pinned to the screen bottom (above the footer), not to the text. */
   .hint {
-    margin-top: 4vh;
-    font-size: 0.75rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--footer-height, 48px) + 14px);
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.95rem;
+    line-height: 0.6;
     color: var(--ink-soft);
     opacity: 0.7;
+    pointer-events: none;
   }
 
   /* ---- Game sections ---- */
@@ -403,7 +411,7 @@
     display: inline-block;
     width: fit-content;
     max-width: 100%;
-    margin-bottom: 1.35rem;
+    margin-bottom: 3.1rem;    /* previous gap (1.35rem) + one text line (1.75rem) */
     padding: 0.32rem 0.7rem;
     /* Same glass style as the CTA button, lighter fill; identical blur. */
     background: rgba(255, 255, 255, 0.15);
@@ -420,12 +428,14 @@
   .booster .status { align-self: flex-start; }
   .grim .status { align-self: flex-end; }
   .copy p {
-    margin: 0 0 0.85rem;
+    margin: 0 0 0.35rem;
     font-size: clamp(0.92rem, 1.35vw, 1.05rem);
-    line-height: 1.75;
+    line-height: 1.6;
     color: var(--ink);
   }
   .copy p:last-of-type { margin-bottom: 0; }
+  /* First line of each description is the summary: one blank line before the details. */
+  .copy-inner > div > p:first-child { margin-bottom: 1.75em; }
 
   .cta {
     margin-top: 1.8rem;
@@ -550,11 +560,12 @@
   /* Reduce decorative whitespace before shrinking text on short screens. */
   @media (max-height: 680px) {
     .logo img { margin-bottom: 2vh; }
-    .company p { margin: 0.18em 0; line-height: 1.55; }
-    .hint { margin-top: 2vh; }
+    .company p { margin: 0.05em 0; line-height: 1.25; }
     .eyebrow { margin-bottom: 0.45rem; }
-    .genre, .status { margin-bottom: 0.65rem; }
-    .copy p { margin-bottom: 0.45rem; line-height: 1.5; }
+    .genre { margin-bottom: 0.65rem; }
+    .status { margin-bottom: 1.3rem; }
+    .copy p { margin-bottom: 0.2rem; line-height: 1.25; }
+    .copy-inner > div > p:first-child { margin-bottom: 0.9em; }
     .cta { margin-top: 0.85rem; }
   }
   /* Last resort on very small screens: scroll ONLY the text within its slide. */
@@ -645,13 +656,8 @@
           <p><strong>獨立開發</strong>工作室。</p>
         </div>
       </div>
-
-      <div class="hint lang-ko">아래로 스크롤</div>
-      <div class="hint lang-en">Scroll down</div>
-      <div class="hint lang-ja">下にスクロール</div>
-      <div class="hint lang-zh">向下滚动</div>
-      <div class="hint lang-zh-tw">向下滾動</div>
     </div>
+    <div class="hint" aria-hidden="true"><span>﹀</span><span>﹀</span></div>
   </section>
 
   <!-- 2. Booster Up: text left / video right -->
