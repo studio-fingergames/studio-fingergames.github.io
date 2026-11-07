@@ -405,8 +405,12 @@
     max-width: 100%;
     margin-bottom: 1.35rem;
     padding: 0.32rem 0.7rem;
-    border: 1px solid var(--line);
+    /* Same glass style as the CTA button, lighter fill; identical blur. */
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 6px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     font-size: 0.74rem;
     font-weight: 400;
     letter-spacing: 0.02em;
