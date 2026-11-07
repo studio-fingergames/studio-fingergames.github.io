@@ -36,11 +36,6 @@
   }
 
   * { box-sizing: border-box; }
-  html {
-    /* One viewport per section. JS settles only after scrolling stops. */
-    scroll-snap-type: none;
-    scroll-behavior: auto;
-  }
   body {
     margin: 0;
     font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -64,10 +59,17 @@
     white-space: nowrap;
   }
 
+  /* Only the language matching <html lang> is shown (default: ko). */
+  .lang-ko,
   .lang-en,
   .lang-ja,
   .lang-zh,
   .lang-zh-tw { display: none; }
+  html[lang="ko"] .lang-ko,
+  html[lang="en"] .lang-en,
+  html[lang="ja"] .lang-ja,
+  html[lang="zh-CN"] .lang-zh,
+  html[lang="zh-TW"] .lang-zh-tw { display: revert; }
 
   /* ---- Fixed top / bottom bands ---- */
   .top-nav {
@@ -102,6 +104,60 @@
     color: var(--white);
     border-bottom-color: rgba(183, 211, 235, 0.55);
   }
+  /* Language picker: left end of the top bar */
+  .lang-picker {
+    position: relative;
+    margin-right: auto;
+  }
+  .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 2px 6px;
+    background: none;
+    border: 0;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: clamp(0.78rem, 1.2vw, 0.92rem);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+  .lang-toggle:hover,
+  .lang-picker.is-open .lang-toggle { color: var(--white); }
+  .lang-caret {
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  .lang-picker.is-open .lang-caret { transform: rotate(90deg); }
+  .lang-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 9rem;
+    margin: 0;
+    padding: 6px 0;
+    list-style: none;
+    background: rgba(18, 12, 34, 0.96);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  .lang-menu[hidden] { display: none; }
+  .lang-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    background: none;
+    border: 0;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.85rem;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .lang-menu button:hover { background: rgba(183, 211, 235, 0.1); color: var(--white); }
+  .lang-menu button[aria-current="true"] { color: var(--white); font-weight: 700; }
   footer.site {
     position: fixed;
     left: 0;
@@ -147,7 +203,8 @@
       gap: 12px;
       padding: 10px 12px;
     }
-    .top-nav a { font-size: 0.74rem; }
+    .top-nav a,
+    .lang-toggle { font-size: 0.74rem; }
     footer.site {
       padding: 8px 12px;
       font-size: 12px;
@@ -189,14 +246,6 @@
     width: min(42vw, 260px);
     height: auto;
     margin-bottom: 4vh;
-  }
-  .company h1 {
-    font-family: Syne, "IBM Plex Sans KR", sans-serif;
-    font-weight: 800;
-    font-size: clamp(1.6rem, 4vw, 2.6rem);
-    letter-spacing: 0.04em;
-    color: var(--white);
-    margin: 0 0 3vh;
   }
   .company p {
     margin: 0.35em 0;
@@ -502,7 +551,6 @@
   /* Last resort on very small screens: scroll ONLY the text within its slide. */
   .content-scroll {
     overflow-y: auto;
-    overscroll-behavior-y: auto;
     scrollbar-width: thin;
   }
 
@@ -514,6 +562,13 @@
 </head>
 <body>
   <nav class="top-nav" aria-label="Section tabs">
+    <div class="lang-picker">
+      <button type="button" class="lang-toggle" aria-haspopup="true" aria-expanded="false" aria-label="Language">
+        <span class="lang-current">한국어</span>
+        <span class="lang-caret" aria-hidden="true">›</span>
+      </button>
+      <ul class="lang-menu" hidden></ul>
+    </div>
     <a href="#home" data-nav="home">
       <span class="lang-ko">핑거게임즈</span>
       <span class="lang-en">Finger Games</span>
@@ -733,165 +788,108 @@
 
 <script>
 (function () {
-  const raw = String(navigator.language || navigator.userLanguage || 'en').toLowerCase();
-  let lang = 'en';
-  if (raw.startsWith('ko')) lang = 'ko';
-  else if (raw.startsWith('ja')) lang = 'ja';
-  else if (raw.startsWith('zh')) {
-    lang = /tw|hk|mo|hant/.test(raw) ? 'zh-tw' : 'zh';
+  // ---- Language: detected on load, switchable from the nav picker ----
+  // CSS shows only the .lang-* elements matching <html lang>.
+  const languages = [
+    { code: 'ko', label: '한국어' },
+    { code: 'en', label: 'English' },
+    { code: 'ja', label: '日本語' },
+    { code: 'zh-CN', label: '简体中文' },
+    { code: 'zh-TW', label: '繁體中文' }
+  ];
+  const raw = String(navigator.language || 'en').toLowerCase();
+  let detectedLang = 'en';
+  if (raw.startsWith('ko')) detectedLang = 'ko';
+  else if (raw.startsWith('ja')) detectedLang = 'ja';
+  else if (raw.startsWith('zh')) detectedLang = /tw|hk|mo|hant/.test(raw) ? 'zh-TW' : 'zh-CN';
+
+  const langPicker = document.querySelector('.lang-picker');
+  const langToggle = langPicker.querySelector('.lang-toggle');
+  const langCurrent = langPicker.querySelector('.lang-current');
+  const langMenu = langPicker.querySelector('.lang-menu');
+
+  function setLanguage(code) {
+    const current = languages.find(item => item.code === code);
+    document.documentElement.lang = code;
+    langCurrent.textContent = current.label;
+    // Menu: current language on top, then the rest in fixed order.
+    const ordered = [current, ...languages.filter(item => item !== current)];
+    langMenu.replaceChildren(...ordered.map(item => {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.lang = item.code;
+      button.lang = item.code;
+      button.textContent = item.label;
+      if (item === current) button.setAttribute('aria-current', 'true');
+      li.appendChild(button);
+      return li;
+    }));
   }
+  function setMenuOpen(open) {
+    langMenu.hidden = !open;
+    langPicker.classList.toggle('is-open', open);
+    langToggle.setAttribute('aria-expanded', String(open));
+  }
+  setLanguage(detectedLang);
 
-  const showLangEl = (el) => {
-    el.style.display = el.tagName === 'SPAN' ? 'inline' : 'block';
-  };
-
-  const htmlLang = lang === 'zh' ? 'zh-CN' : (lang === 'zh-tw' ? 'zh-TW' : lang);
-  document.documentElement.lang = htmlLang;
-  document.querySelectorAll('.lang-ko, .lang-en, .lang-ja, .lang-zh, .lang-zh-tw').forEach(el => {
-    el.style.display = 'none';
-  });
-  document.querySelectorAll('.lang-' + lang).forEach(showLangEl);
-
+  // ---- Static references (DOM structure never changes) ----
   const navLinks = Array.from(document.querySelectorAll('.top-nav a[data-nav]'));
   const sections = Array.from(document.querySelectorAll('section.snap'));
-  const videos = Array.from(document.querySelectorAll('section.game video'));
+  const sectionVideos = sections.map(section => section.querySelector('video'));
+  const videos = sectionVideos.filter(Boolean);
   const gameSections = sections.filter(section => section.classList.contains('game'));
+  const header = document.querySelector('.top-nav');
+  const footer = document.querySelector('footer.site');
 
-  // At 1.65:1 and wider, retain the original left/right video alignment.
-  // As the viewport gets taller, ease the gameplay center toward 50% of the screen.
-  // The focal positions (data-focus-x) are relative to each FULL video, not the screen.
-  function updateVideoLayout() {
-    const viewportRatio = window.innerWidth / Math.max(window.innerHeight, 1);
-    const ratioProgress = Math.max(0, Math.min(1, (1.65 - viewportRatio) / (1.65 - 0.8)));
-    const centering = ratioProgress * ratioProgress * (3 - 2 * ratioProgress);
+  const videoItems = gameSections.map(section => ({
+    section,
+    video: section.querySelector('video'),
+    isBooster: section.classList.contains('booster'),
+    // Focal positions (data-focus-x) are relative to each FULL video, not the screen.
+    focalX: Number(section.dataset.focusX) || 0.5,
+    shift: 0,
+    edge: 0,
+    valid: false
+  }));
+  const fitItems = [
+    { wrapper: sections[0], block: sections[0].querySelector('.company-inner'), available: 0, natural: 0 },
+    ...gameSections.map(section => ({
+      wrapper: section.querySelector('.copy'),
+      block: section.querySelector('.copy-inner'),
+      available: 0,
+      natural: 0
+    }))
+  ];
 
-    gameSections.forEach(section => {
-      const video = section.querySelector('video');
-      if (!video) return;
-
-      const screenWidth = section.getBoundingClientRect().width;
-      const videoWidth = video.getBoundingClientRect().width;
-      if (screenWidth <= 0 || videoWidth <= 0) return;
-
-      const isBooster = section.classList.contains('booster');
-      const focalX = Number(section.dataset.focusX) || 0.5;
-      // The original layout anchors Booster's video to the right, Grim's to the left.
-      const originalLeft = isBooster ? screenWidth - videoWidth : 0;
-      const focalCenter = originalLeft + videoWidth * focalX;
-      const shift = (screenWidth / 2 - focalCenter) * centering;
-      const videoLeft = originalLeft + shift;
-      const videoRight = videoLeft + videoWidth;
-
-      video.style.setProperty('--video-shift', `${shift.toFixed(2)}px`);
-
-      // Booster: attach fade to the left video edge; Grim: to the right edge.
-      // If the edge is outside the viewport, attach it to the viewport edge instead.
-      const distanceFromSide = isBooster ? videoLeft : screenWidth - videoRight;
-      const clampedEdge = Math.max(0, Math.min(screenWidth, distanceFromSide));
-      section.style.setProperty('--fade-edge', `${clampedEdge.toFixed(2)}px`);
-    });
-  }
-
-  let videoLayoutQueued = false;
-  function scheduleVideoLayout() {
-    if (videoLayoutQueued) return;
-    videoLayoutQueued = true;
-    requestAnimationFrame(() => {
-      videoLayoutQueued = false;
-      updateVideoLayout();
-    });
-  }
-
-  // Intrinsic video size may not be available on the initial paint.
-  videos.forEach(video => video.addEventListener('loadedmetadata', scheduleVideoLayout));
-  window.addEventListener('resize', scheduleVideoLayout, { passive: true });
-  window.addEventListener('orientationchange', scheduleVideoLayout);
-  window.addEventListener('load', scheduleVideoLayout);
-  if ('ResizeObserver' in window) {
-    const layoutObserver = new ResizeObserver(scheduleVideoLayout);
-    gameSections.forEach(section => layoutObserver.observe(section));
-  }
-  scheduleVideoLayout();
-
-  let activeSectionId = null;
-  let syncQueued = false;
-
-  function setActiveNav(id) {
-    if (activeSectionId === id) return;
-    activeSectionId = id;
-    navLinks.forEach(a => {
-      a.classList.toggle('is-active', a.getAttribute('data-nav') === id);
-    });
-  }
-
-  // Highlight the section covering the viewport center, not the section
-  // whose TOP happens to be closest. Works even when mobile text is taller
-  // than the screen. CSS handles the snap; JS never forces scroll position.
-  function getVisibleSection() {
-    const midpoint = window.innerHeight / 2;
-    let closest = null;
-    let closestDistance = Infinity;
-    for (const section of sections) {
-      const rect = section.getBoundingClientRect();
-      if (rect.top <= midpoint && rect.bottom > midpoint) return section;
-      const distance = Math.min(Math.abs(rect.top - midpoint), Math.abs(rect.bottom - midpoint));
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closest = section;
-      }
-    }
-    return closest;
-  }
-
-  function syncVisibleSection() {
-    const section = getVisibleSection();
-    if (!section) return;
-    setActiveNav(section.id);
-
-    // Only the video belonging to the visible section may play.
-    const selectedVideo = document.hidden ? null : section.querySelector('video');
-    videos.forEach(video => {
-      if (video === selectedVideo) {
-        if (video.paused) video.play().catch(() => {});
-      } else if (!video.paused) {
-        video.pause();
-      }
-    });
-  }
-
-  function scheduleVisibleSectionSync() {
-    if (syncQueued) return;
-    syncQueued = true;
-    requestAnimationFrame(() => {
-      syncQueued = false;
-      syncVisibleSection();
-    });
-  }
+  // ---- Layout cache: re-measured only when layout can change
+  //      (resize / aspect-ratio change / language / fonts / video metadata / load) ----
+  let viewH = window.innerHeight;
+  let maxScrollY = 0;
+  let sectionTops = [];
 
   // Measure header/footer so the text center stays in the actually visible area.
   // Preserve all translations; fit via spacing first (CSS) then scale only if needed.
-  const fitBlocks = [
-    { section: sections[0], block: document.querySelector('.company-inner') },
-    ...gameSections.map(section => ({ section, block: section.querySelector('.copy-inner') }))
-  ];
-  let fitQueued = false;
+  // Batched: reset all -> measure all -> apply all.
   function fitContent() {
-    const header = document.querySelector('.top-nav');
-    const footer = document.querySelector('footer.site');
-    document.documentElement.style.setProperty('--nav-height', `${Math.ceil(header.getBoundingClientRect().height)}px`);
-    document.documentElement.style.setProperty('--footer-height', `${Math.ceil(footer.getBoundingClientRect().height)}px`);
+    const navHeight = Math.ceil(header.getBoundingClientRect().height);
+    const footerHeight = Math.ceil(footer.getBoundingClientRect().height);
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--nav-height', `${navHeight}px`);
+    rootStyle.setProperty('--footer-height', `${footerHeight}px`);
 
-    fitBlocks.forEach(({ section, block }) => {
-      if (!block) return;
+    fitItems.forEach(({ block }) => {
       block.classList.remove('content-scroll');
       block.style.removeProperty('height');
       block.style.setProperty('--content-fit', '1');
-      const wrapper = section.classList.contains('company') ? section : section.querySelector('.copy');
-      const style = getComputedStyle(wrapper);
-      const available = Math.max(0, wrapper.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom));
-      const natural = block.scrollHeight;
+    });
+    fitItems.forEach(item => {
+      const style = getComputedStyle(item.wrapper);
+      item.available = Math.max(0, item.wrapper.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom));
+      item.natural = item.block.scrollHeight;
+    });
+    fitItems.forEach(({ block, available, natural }) => {
       if (!available || !natural) return;
-
       const minScale = 0.80;  // Maintain readable text; overflow inside the panel if smaller is needed.
       const scale = Math.max(minScale, Math.min(1, (available - 2) / natural));
       block.style.setProperty('--content-fit', scale.toFixed(3));
@@ -901,19 +899,90 @@
       }
     });
   }
-  function scheduleContentFit() {
-    if (fitQueued) return;
-    fitQueued = true;
-    requestAnimationFrame(() => {
-      fitQueued = false;
-      fitContent();
+
+  function measureSections() {
+    viewH = window.innerHeight;
+    maxScrollY = Math.max(0, document.documentElement.scrollHeight - viewH);
+    sectionTops = sections.map(section => Math.round(section.getBoundingClientRect().top + window.scrollY));
+  }
+
+  // At 1.65:1 and wider, retain the original left/right video alignment.
+  // As the viewport gets taller, ease the gameplay center toward 50% of the screen.
+  // Batched: measure all -> apply all.
+  function updateVideoLayout() {
+    const viewportRatio = window.innerWidth / Math.max(window.innerHeight, 1);
+    const ratioProgress = Math.max(0, Math.min(1, (1.65 - viewportRatio) / (1.65 - 0.8)));
+    const centering = ratioProgress * ratioProgress * (3 - 2 * ratioProgress);
+
+    videoItems.forEach(item => {
+      const screenWidth = item.section.getBoundingClientRect().width;
+      const videoWidth = item.video.getBoundingClientRect().width;
+      item.valid = screenWidth > 0 && videoWidth > 0;
+      if (!item.valid) return;
+
+      // The original layout anchors Booster's video to the right, Grim's to the left.
+      const originalLeft = item.isBooster ? screenWidth - videoWidth : 0;
+      const focalCenter = originalLeft + videoWidth * item.focalX;
+      item.shift = (screenWidth / 2 - focalCenter) * centering;
+      const videoLeft = originalLeft + item.shift;
+      const videoRight = videoLeft + videoWidth;
+
+      // Booster: attach fade to the left video edge; Grim: to the right edge.
+      // If the edge is outside the viewport, attach it to the viewport edge instead.
+      const distanceFromSide = item.isBooster ? videoLeft : screenWidth - videoRight;
+      item.edge = Math.max(0, Math.min(screenWidth, distanceFromSide));
+    });
+    videoItems.forEach(item => {
+      if (!item.valid) return;
+      item.video.style.setProperty('--video-shift', `${item.shift.toFixed(2)}px`);
+      item.section.style.setProperty('--fade-edge', `${item.edge.toFixed(2)}px`);
     });
   }
-  window.addEventListener('resize', scheduleContentFit, { passive: true });
-  window.addEventListener('load', scheduleContentFit);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleContentFit);
-  scheduleContentFit();
 
+  // ---- Visible section (nav highlight + video playback) from cached tops; no layout reads ----
+  let activeSectionId = null;
+  function setActiveNav(id) {
+    if (activeSectionId === id) return;
+    activeSectionId = id;
+    navLinks.forEach(a => {
+      a.classList.toggle('is-active', a.getAttribute('data-nav') === id);
+    });
+  }
+  // The section covering the viewport center is the visible one.
+  function syncVisibleSection() {
+    const mid = window.scrollY + viewH / 2;
+    let index = 0;
+    while (index < sections.length - 1 && sectionTops[index + 1] <= mid) index++;
+    setActiveNav(sections[index].id);
+
+    // Only the video belonging to the visible section may play.
+    const selectedVideo = document.hidden ? null : sectionVideos[index];
+    videos.forEach(video => {
+      if (video === selectedVideo) {
+        if (video.paused) video.play().catch(() => {});
+      } else if (!video.paused) {
+        video.pause();
+      }
+    });
+  }
+
+  function updateLayout() {
+    fitContent();
+    measureSections();
+    updateVideoLayout();
+    syncVisibleSection();
+  }
+  let layoutQueued = false;
+  function scheduleLayout() {
+    if (layoutQueued) return;
+    layoutQueued = true;
+    requestAnimationFrame(() => {
+      layoutQueued = false;
+      updateLayout();
+    });
+  }
+
+  // ---- Snap engine ----
   // Free scroll while moving. Every input feeds one target (targetY) and a single
   // glide loop eases the page toward it, so wheel / touch / drag / tabs all feel alike.
   // Release (touch / mouse drag) decides the section immediately; wheel / keyboard
@@ -935,9 +1004,6 @@
   let settleTimer = 0;
   let drag = null;          // active press: { y, lastY, t, startScroll, moved }
 
-  function sectionTop(section) {
-    return Math.round(section.getBoundingClientRect().top + window.scrollY);
-  }
   // Round to device pixels (not CSS px) so motion steps stay 1 physical pixel on high-DPR screens.
   function devicePx(y) {
     const dpr = window.devicePixelRatio || 1;
@@ -961,8 +1027,7 @@
     animFrame = requestAnimationFrame(tick);
   }
   function glideTo(y) {
-    const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    targetY = Math.max(0, Math.min(maxY, y));
+    targetY = Math.max(0, Math.min(maxScrollY, y));
     if (prefersReducedMotion.matches) {
       cancelAnim();
       window.scrollTo(0, targetY);
@@ -975,14 +1040,14 @@
   }
   function goToIndex(index) {
     currentIndex = index;
-    glideTo(sectionTop(sections[index]));
+    glideTo(sectionTops[index]);
   }
   function settle(flick) {
     if (holding) return;
     if (!flick && Math.abs(wheelSum) > flickPx) flick = Math.sign(wheelSum);
     wheelSum = 0;
     const y = animFrame ? targetY : window.scrollY;
-    const moved = (y - sectionTop(sections[currentIndex])) / window.innerHeight;
+    const moved = (y - sectionTops[currentIndex]) / viewH;
     let steps = moved > 0 ? Math.floor(moved + 1 - swipeRatio) : Math.ceil(moved - 1 + swipeRatio);
     if (steps === 0 && flick) steps = flick;
     goToIndex(Math.max(0, Math.min(sections.length - 1, currentIndex + steps)));
@@ -1000,32 +1065,10 @@
     settle(quick ? Math.sign(dy) : 0);
   }
 
-  // Keyboard / resize / anything native: settle once scrolling is idle.
-  window.addEventListener('scroll', () => { if (!holding && !animFrame) requestSettle(90); }, { passive: true });
-  window.addEventListener('resize', () => requestSettle(150), { passive: true });
-
-  // Wheel: accumulate into the target and glide; settle when input stops.
-  window.addEventListener('wheel', (event) => {
-    if (event.ctrlKey || event.target.closest('.content-scroll')) return;
-    event.preventDefault();
-    const unit = event.deltaMode === 1 ? 16 : (event.deltaMode === 2 ? window.innerHeight : 1);
-    const dy = event.deltaY * unit;
-    wheelSum += dy;
-    glideTo((animFrame ? targetY : window.scrollY) + dy);
-    requestSettle(90);
-  }, { passive: false });
-
   // Touch and mouse share one drag path. Touch drags block the browser's own scroll
   // (and its momentum) so only our glide moves the page.
-  let suppressClickUntil = 0;
-  document.addEventListener('click', (event) => {
-    if (performance.now() < suppressClickUntil) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }, true);
-
   // Input events only record the pointer; the page moves once per frame.
+  let suppressClickUntil = 0;
   let dragFrame = 0;
   function applyDrag() {
     dragFrame = 0;
@@ -1060,6 +1103,60 @@
     suppressClickUntil = performance.now() + 50;
     release(finished, finished.lastY);
   }
+
+  // ---- Event wiring ----
+  window.addEventListener('scroll', () => {
+    syncVisibleSection();
+    // Keyboard / anything native: settle once scrolling is idle.
+    if (!holding && !animFrame) requestSettle(90);
+  }, { passive: true });
+  // Size / aspect-ratio changes: re-measure, then re-target the current section.
+  window.addEventListener('resize', () => {
+    scheduleLayout();
+    requestSettle(150);
+  }, { passive: true });
+  window.addEventListener('load', scheduleLayout);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleLayout);
+  // Intrinsic video size may not be available on the initial paint.
+  videos.forEach(video => video.addEventListener('loadedmetadata', scheduleLayout));
+  document.addEventListener('visibilitychange', syncVisibleSection);
+
+  // Language picker: text length changes, so re-fit the layout after switching.
+  langToggle.addEventListener('click', () => setMenuOpen(langMenu.hidden));
+  langMenu.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-lang]');
+    if (!button) return;
+    setLanguage(button.dataset.lang);
+    setMenuOpen(false);
+    scheduleLayout();
+  });
+  document.addEventListener('click', (event) => {
+    if (!langMenu.hidden && !langPicker.contains(event.target)) setMenuOpen(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !langMenu.hidden) {
+      setMenuOpen(false);
+      langToggle.focus();
+    }
+  });
+
+  // Wheel: accumulate into the target and glide; settle when input stops.
+  window.addEventListener('wheel', (event) => {
+    if (event.ctrlKey || event.target.closest('.content-scroll')) return;
+    event.preventDefault();
+    const unit = event.deltaMode === 1 ? 16 : (event.deltaMode === 2 ? viewH : 1);
+    const dy = event.deltaY * unit;
+    wheelSum += dy;
+    glideTo((animFrame ? targetY : window.scrollY) + dy);
+    requestSettle(90);
+  }, { passive: false });
+
+  document.addEventListener('click', (event) => {
+    if (performance.now() < suppressClickUntil) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
 
   window.addEventListener('touchstart', (event) => {
     if (event.touches.length !== 1) {   // pinch etc.: abandon the drag
@@ -1101,12 +1198,7 @@
     if (index >= 0) goToIndex(index);
   });
 
-  window.addEventListener('scroll', scheduleVisibleSectionSync, { passive: true });
-  window.addEventListener('resize', scheduleVisibleSectionSync);
-  window.addEventListener('load', scheduleVisibleSectionSync);
-  window.addEventListener('hashchange', scheduleVisibleSectionSync);
-  document.addEventListener('visibilitychange', scheduleVisibleSectionSync);
-  scheduleVisibleSectionSync();
+  updateLayout();
 })();
 </script>
 </body>
