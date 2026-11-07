@@ -14,6 +14,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="Mi-4ZzdgznONVkI9B5TQMqTpNY3nEj84TqwPXPLjang" />
 <title>FINGER GAMES</title>
+<meta name="description" content="Finger Games - retro and casual games by a solo developer. Booster Up, Grim Dungeon.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="FINGER GAMES">
+<meta property="og:description" content="Retro and casual games by a solo developer. Booster Up, Grim Dungeon.">
+<meta property="og:image" content="https://studio-fingergames.github.io/FINGERGAMES_logo.png">
+<link rel="icon" type="image/png" href="https://studio-fingergames.github.io/FINGERGAMES_logo.png">
+<link rel="preconnect" href="https://studio-fingergames.github.io" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
@@ -39,6 +46,22 @@
     font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     background: var(--bg-deep);
     color: var(--ink);
+    cursor: grab;
+  }
+  body.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  a, button, .cta { cursor: pointer; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .lang-en,
@@ -89,24 +112,35 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 8px 16px;
-    padding: 12px 18px;
+    gap: 8px 20px;
+    padding: 10px 18px;
     text-align: center;
-    font-size: 12px;
-    color: #7a6e91;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
     background: rgba(13, 10, 22, 0.9);
     border-top: 1px solid var(--line);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  footer.site a {
-    color: #9ab4cc;
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
+  .footer-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px 14px;
+    min-width: 0;
   }
-  footer.site a:hover {
+  .footer-mail {
     color: var(--white);
-    border-bottom-color: rgba(183, 211, 235, 0.4);
+    user-select: text;
+    pointer-events: none;
+  }
+  footer.site .cta.footer-privacy {
+    margin-top: 0;
+    flex-shrink: 0;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.78rem;
   }
   @media (max-width: 600px) {
     .top-nav {
@@ -115,9 +149,13 @@
     }
     .top-nav a { font-size: 0.74rem; }
     footer.site {
-      padding: 10px 12px;
-      font-size: 11px;
-      gap: 6px 12px;
+      padding: 8px 12px;
+      font-size: 12px;
+      gap: 6px 10px;
+    }
+    footer.site .cta.footer-privacy {
+      padding: 0.48rem 0.8rem;
+      font-size: 0.72rem;
     }
   }
 
@@ -259,9 +297,28 @@
     transform: scale(var(--content-fit, 1));
     transform-origin: center;
   }
-  .booster .copy { order: 1; text-align: left; }
+  /* Landscape: nudge copy toward the video side */
+  .booster .copy {
+    order: 1;
+    text-align: left;
+    padding-left: clamp(40px, 8vw, 112px);
+    padding-right: clamp(10px, 2vw, 28px);
+  }
+  .booster .copy-inner {
+    transform: translateX(clamp(10px, 3.8vw, 64px)) scale(var(--content-fit, 1));
+    transform-origin: left center;
+  }
   .booster .stage { order: 2; justify-content: flex-end; }
-  .grim .copy { order: 2; text-align: right; }
+  .grim .copy {
+    order: 2;
+    text-align: right;
+    padding-right: clamp(40px, 8vw, 112px);
+    padding-left: clamp(10px, 2vw, 28px);
+  }
+  .grim .copy-inner {
+    transform: translateX(calc(clamp(10px, 3.8vw, 64px) * -1)) scale(var(--content-fit, 1));
+    transform-origin: right center;
+  }
   .grim .stage { order: 1; justify-content: flex-start; }
 
   .eyebrow {
@@ -387,6 +444,11 @@
         rgba(18, 12, 34, 0.78) 100%
       );
     }
+    .booster .copy-inner,
+    .grim .copy-inner {
+      transform: scale(var(--content-fit, 1));
+      transform-origin: center;
+    }
     .booster .stage,
     .grim .stage {
       order: unset;
@@ -478,8 +540,9 @@
   <!-- 1. Company -->
   <section class="snap company" id="home">
     <div class="company-inner">
+      <h1 class="sr-only">FINGER GAMES</h1>
       <div class="logo">
-        <img src="https://studio-fingergames.github.io/FINGERGAMES_logo.png" alt="FINGER GAMES LOGO">
+        <img src="https://studio-fingergames.github.io/FINGERGAMES_logo.png" width="1124" height="355" alt="FINGER GAMES LOGO">
       </div>
       <div class="intro-text">
         <div class="lang-ko">
@@ -655,14 +718,17 @@
   </section>
 
   <footer class="site">
-    <span>Copyright © 2026 FINGER GAMES. All rights reserved.</span>
-    <a href="PrivacyPolicy.html">
+    <div class="footer-meta">
+      <span>Copyright © 2026 FINGER GAMES. All rights reserved.</span>
+      <span class="footer-mail">studio.fingergames@gmail.com</span>
+    </div>
+    <a class="cta footer-privacy" href="PrivacyPolicy.html">
       <span class="lang-ko">개인정보 처리방침</span>
       <span class="lang-en">Privacy Policy</span>
       <span class="lang-ja">プライバシーポリシー</span>
       <span class="lang-zh">隐私政策</span>
+      <span class="lang-zh-tw">隱私權政策</span>
     </a>
-    <a href="mailto:studio.fingergames@gmail.com">studio.fingergames@gmail.com</a>
   </footer>
 
 <script>
@@ -848,80 +914,171 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleContentFit);
   scheduleContentFit();
 
-  // No competing native CSS snap: scroll naturally and settle once momentum stops.
-  // scrollend includes touch inertia on supported browsers; otherwise use idle fallback.
+  // Free scroll while moving. Every input feeds one target (targetY) and a single
+  // glide loop eases the page toward it, so wheel / touch / drag / tabs all feel alike.
+  // Release (touch / mouse drag) decides the section immediately; wheel / keyboard
+  // decide once input goes idle.
+  // Direction bias: moving past swipeRatio of a page toward a neighbor, or a quick
+  // flick / any wheel burst, commits to that neighbor.
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const hasScrollEnd = 'onscrollend' in window;
-  let touchHeld = false;
-  let settleTimer = null;
-  let snapTarget = null;
+  const swipeRatio = 0.2;
+  const flickMs = 350;
+  const flickPx = 24;
+  const glideMs = 85;       // glide time constant: smaller = snappier
+  let currentIndex = 0;
+  let holding = false;      // finger down or mouse drag in progress
+  let animFrame = 0;        // non-zero while the glide loop runs
+  let lastFrame = 0;
+  let posY = 0;             // float scroll position (scrollY may be rounded)
+  let targetY = 0;
+  let wheelSum = 0;         // wheel delta accumulated since the last settle
+  let settleTimer = 0;
+  let touchGesture = null;
+  let mouseDrag = null;
 
-  function positionOf(section) {
+  function sectionTop(section) {
     return Math.round(section.getBoundingClientRect().top + window.scrollY);
   }
-  function stopProgrammaticMove() {
-    if (snapTarget === null) return;
-    snapTarget = null;
-    // Cancel an in-progress smooth scroll immediately when the user intervenes.
-    window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+  function cancelAnim() {
+    if (!animFrame) return;
+    cancelAnimationFrame(animFrame);
+    animFrame = 0;
   }
-  function scrollToSection(section) {
-    const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    const target = Math.max(0, Math.min(positionOf(section), maxY));
-    if (Math.abs(window.scrollY - target) < 2) return;
-    snapTarget = target;
-    window.scrollTo({ top: target, behavior: prefersReducedMotion.matches ? 'instant' : 'smooth' });
-  }
-  function settleNearest() {
-    if (touchHeld) return;
-    if (snapTarget !== null) {
-      // Ignore scrollend events produced by our own smooth scrolling.
-      if (Math.abs(window.scrollY - snapTarget) < 3) snapTarget = null;
+  function tick(now) {
+    const dt = Math.min(50, Math.max(1, now - lastFrame));
+    lastFrame = now;
+    if (Math.abs(targetY - posY) < 0.5) {
+      window.scrollTo(0, targetY);
+      animFrame = 0;
       return;
     }
-    let nearest = sections[0];
-    let distance = Infinity;
-    for (const section of sections) {
-      const d = Math.abs(positionOf(section) - window.scrollY);
-      if (d < distance) { distance = d; nearest = section; }
+    posY += (targetY - posY) * (1 - Math.exp(-dt / glideMs));
+    window.scrollTo(0, posY);
+    animFrame = requestAnimationFrame(tick);
+  }
+  function glideTo(y) {
+    const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    targetY = Math.max(0, Math.min(maxY, y));
+    if (prefersReducedMotion.matches) {
+      cancelAnim();
+      window.scrollTo(0, targetY);
+      return;
     }
-    if (distance >= 3) scrollToSection(nearest);
+    if (animFrame) return;
+    posY = window.scrollY;
+    lastFrame = performance.now();
+    animFrame = requestAnimationFrame(tick);
   }
-  function scheduleSettleFallback() {
-    if (hasScrollEnd) return;
+  function goToIndex(index) {
+    currentIndex = index;
+    glideTo(sectionTop(sections[index]));
+  }
+  function settle(flick) {
+    if (holding) return;
+    if (!flick && Math.abs(wheelSum) > flickPx) flick = Math.sign(wheelSum);
+    wheelSum = 0;
+    const y = animFrame ? targetY : window.scrollY;
+    const moved = (y - sectionTop(sections[currentIndex])) / window.innerHeight;
+    let steps = moved > 0 ? Math.floor(moved + 1 - swipeRatio) : Math.ceil(moved - 1 + swipeRatio);
+    if (steps === 0 && flick) steps = flick;
+    goToIndex(Math.max(0, Math.min(sections.length - 1, currentIndex + steps)));
+  }
+  function requestSettle(delay) {
     clearTimeout(settleTimer);
-    settleTimer = setTimeout(settleNearest, 190);
+    settleTimer = setTimeout(() => settle(0), delay);
   }
-  function onManualInput() {
+  // gesture = { y, t } at press; endY = pointer position at release.
+  function release(gesture, endY) {
+    holding = false;
     clearTimeout(settleTimer);
-    stopProgrammaticMove();
+    const dy = gesture.y - endY;
+    const quick = performance.now() - gesture.t < flickMs && Math.abs(dy) > flickPx;
+    settle(quick ? Math.sign(dy) : 0);
   }
-  window.addEventListener('wheel', onManualInput, { passive: true });
-  window.addEventListener('touchstart', () => { touchHeld = true; onManualInput(); }, { passive: true });
-  window.addEventListener('touchend', () => { touchHeld = false; scheduleSettleFallback(); }, { passive: true });
-  window.addEventListener('touchcancel', () => { touchHeld = false; scheduleSettleFallback(); }, { passive: true });
-  window.addEventListener('keydown', (event) => {
-    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) onManualInput();
-  });
-  if (hasScrollEnd) window.addEventListener('scrollend', settleNearest);
-  window.addEventListener('scroll', scheduleSettleFallback, { passive: true });
 
-  // Tabs and swipes share exactly the same three anchor positions.
+  // Keyboard / resize / anything native: settle once scrolling is idle.
+  window.addEventListener('scroll', () => { if (!holding && !animFrame) requestSettle(90); }, { passive: true });
+  window.addEventListener('resize', () => requestSettle(150), { passive: true });
+
+  // Wheel: accumulate into the target and glide; settle when input stops.
+  window.addEventListener('wheel', (event) => {
+    if (event.ctrlKey || event.target.closest('.content-scroll')) return;
+    event.preventDefault();
+    const unit = event.deltaMode === 1 ? 16 : (event.deltaMode === 2 ? window.innerHeight : 1);
+    const dy = event.deltaY * unit;
+    wheelSum += dy;
+    glideTo((animFrame ? targetY : window.scrollY) + dy);
+    requestSettle(90);
+  }, { passive: false });
+
+  window.addEventListener('touchstart', (event) => {
+    if (event.touches.length !== 1 || event.target.closest('.content-scroll')) return;
+    cancelAnim();
+    holding = true;
+    touchGesture = { y: event.touches[0].clientY, t: performance.now() };
+  }, { passive: true });
+  window.addEventListener('touchend', (event) => {
+    if (!touchGesture) return;
+    const gesture = touchGesture;
+    touchGesture = null;
+    release(gesture, event.changedTouches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchcancel', () => {
+    touchGesture = null;
+    holding = false;
+    settle(0);
+  }, { passive: true });
+
+  // PC: click-drag scroll
+  function swallowClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  function endMouseDrag() {
+    if (!mouseDrag) return;
+    const drag = mouseDrag;
+    mouseDrag = null;
+    if (!drag.moved) return;
+    document.body.classList.remove('is-dragging');
+    document.addEventListener('click', swallowClick, { capture: true, once: true });
+    release(drag, drag.lastY);
+  }
+  window.addEventListener('mousedown', (event) => {
+    if (event.button !== 0 || event.target.closest('a, button, input, textarea, select, label, .content-scroll')) return;
+    cancelAnim();
+    mouseDrag = { y: event.clientY, lastY: event.clientY, t: performance.now(), startScroll: window.scrollY, moved: false };
+  });
+  window.addEventListener('mousemove', (event) => {
+    if (!mouseDrag) return;
+    const dy = event.clientY - mouseDrag.y;
+    if (!mouseDrag.moved) {
+      if (Math.abs(dy) < 5) return;
+      mouseDrag.moved = true;
+      holding = true;
+      document.body.classList.add('is-dragging');
+    }
+    event.preventDefault();
+    mouseDrag.lastY = event.clientY;
+    window.scrollTo(0, mouseDrag.startScroll - dy);
+  });
+  window.addEventListener('mouseup', endMouseDrag);
+  window.addEventListener('mouseleave', endMouseDrag);
+  window.addEventListener('blur', endMouseDrag);
+
+  // Tabs and browser history share the same section anchors.
   navLinks.forEach(link => {
     link.addEventListener('click', (event) => {
       const section = sections.find(item => item.id === link.dataset.nav);
       if (!section) return;
       event.preventDefault();
-      stopProgrammaticMove();
-      clearTimeout(settleTimer);
       history.pushState(null, '', `#${section.id}`);
       setActiveNav(section.id);
-      scrollToSection(section);
+      goToIndex(sections.indexOf(section));
     });
   });
   window.addEventListener('popstate', () => {
-    const section = sections.find(item => `#${item.id}` === location.hash);
-    if (section) { stopProgrammaticMove(); scrollToSection(section); }
+    const index = sections.findIndex(item => `#${item.id}` === location.hash);
+    if (index >= 0) goToIndex(index);
   });
 
   window.addEventListener('scroll', scheduleVisibleSectionSync, { passive: true });
