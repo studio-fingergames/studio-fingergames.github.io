@@ -30,7 +30,7 @@
 
   * { box-sizing: border-box; }
   html {
-    /* Full-screen desktop sections snap firmly via the browser's native engine. */
+    /* Use the same firm native snap on desktop and mobile. */
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
   }
@@ -86,12 +86,12 @@
     bottom: 0;
     z-index: 1000;
     display: flex;
-    flex-wrap: nowrap;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
-    gap: 10px 16px;
-    padding: 10px 18px;
-    text-align: left;
+    gap: 8px 16px;
+    padding: 12px 18px;
+    text-align: center;
     font-size: 12px;
     color: #7a6e91;
     background: rgba(13, 10, 22, 0.9);
@@ -99,24 +99,14 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  .footer-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 14px;
-    min-width: 0;
+  footer.site a {
+    color: #9ab4cc;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
   }
-  .footer-mail {
-    color: #7a6e91;
-    user-select: text;
-    pointer-events: none;
-  }
-  footer.site .cta.footer-privacy {
-    margin-top: 0;
-    flex-shrink: 0;
-    margin-left: auto;
-    padding: 0.55rem 0.95rem;
-    font-size: 0.78rem;
+  footer.site a:hover {
+    color: var(--white);
+    border-bottom-color: rgba(183, 211, 235, 0.4);
   }
   @media (max-width: 600px) {
     .top-nav {
@@ -125,13 +115,9 @@
     }
     .top-nav a { font-size: 0.74rem; }
     footer.site {
-      padding: 8px 12px;
+      padding: 10px 12px;
       font-size: 11px;
-      gap: 8px 10px;
-    }
-    footer.site .cta.footer-privacy {
-      padding: 0.48rem 0.8rem;
-      font-size: 0.72rem;
+      gap: 6px 12px;
     }
   }
 
@@ -141,8 +127,8 @@
     height: 100vh;
     height: 100dvh;
     scroll-snap-align: start;
-    /* Normal allows long/fast scrolls without trapping the user in every section. */
-    scroll-snap-stop: normal;
+    /* Prevent a fast flick from skipping a game section. */
+    scroll-snap-stop: always;
     position: relative;
     overflow: hidden;
   }
@@ -363,18 +349,14 @@
 
 
 
-  /* Portrait / narrow: native proximity snap, allowing tall text to scroll freely. */
+  /* Portrait / narrow: keep mandatory snap points, but allow taller content to scroll. */
   @media (max-width: 900px), (orientation: portrait) {
-    html {
-      scroll-snap-type: y proximity;
-    }
     .snap {
       height: auto;
       min-height: 100vh;
       min-height: 100dvh;
       overflow: visible;
-      scroll-snap-align: none;
-      scroll-snap-stop: normal;
+      /* Inherit scroll-snap-align:start and scroll-snap-stop:always. */
     }
     .game {
       display: block;
@@ -647,16 +629,14 @@
   </section>
 
   <footer class="site">
-    <div class="footer-meta">
-      <span>Copyright © 2026 FINGER GAMES. All rights reserved.</span>
-      <span class="footer-mail">studio.fingergames@gmail.com</span>
-    </div>
-    <a class="cta footer-privacy" href="PrivacyPolicy.html">
+    <span>Copyright © 2026 FINGER GAMES. All rights reserved.</span>
+    <a href="PrivacyPolicy.html">
       <span class="lang-ko">개인정보 처리방침</span>
       <span class="lang-en">Privacy Policy</span>
       <span class="lang-ja">プライバシーポリシー</span>
       <span class="lang-zh">隐私政策</span>
     </a>
+    <a href="mailto:studio.fingergames@gmail.com">studio.fingergames@gmail.com</a>
   </footer>
 
 <script>
