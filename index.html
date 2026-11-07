@@ -30,9 +30,9 @@
 
   * { box-sizing: border-box; }
   html {
-    /* Use the same firm native snap on desktop and mobile. */
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
+    /* One viewport per section. JS settles only after scrolling stops. */
+    scroll-snap-type: none;
+    scroll-behavior: auto;
   }
   body {
     margin: 0;
@@ -122,13 +122,9 @@
   }
 
   .snap {
-    min-height: 100vh;
-    min-height: 100dvh;
     height: 100vh;
     height: 100dvh;
-    scroll-snap-align: start;
-    /* Prevent a fast flick from skipping a game section. */
-    scroll-snap-stop: always;
+    min-height: 0;
     position: relative;
     overflow: hidden;
   }
@@ -138,7 +134,8 @@
     display: grid;
     place-items: center;
     text-align: center;
-    padding: 8vh 6vw;
+    padding: max(8vh, calc(var(--nav-height, 48px) + 12px)) 6vw
+             max(8vh, calc(var(--footer-height, 48px) + 12px));
     background:
       radial-gradient(ellipse 70% 55% at 50% 20%, rgba(90, 60, 150, 0.35), transparent 70%),
       linear-gradient(180deg, #2d2148 0%, var(--bg-deep) 100%);
@@ -146,6 +143,9 @@
   .company-inner {
     max-width: 720px;
     width: min(92vw, 720px);
+    transform: scale(var(--content-fit, 1));
+    transform-origin: center;
+    flex-shrink: 0;
   }
   .logo img {
     width: min(42vw, 260px);
@@ -243,8 +243,21 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(24px, 5vw, 72px);
+    padding: max(clamp(24px, 5vw, 72px), calc(var(--nav-height, 48px) + 12px))
+             clamp(24px, 5vw, 72px)
+             max(clamp(24px, 5vw, 72px), calc(var(--footer-height, 48px) + 12px));
+    min-height: 0;
+    overflow: hidden;
     z-index: 2;
+  }
+  /* Keep all original text in a single vertically centered, shrinkable block. */
+  .copy-inner {
+    width: 100%;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    transform: scale(var(--content-fit, 1));
+    transform-origin: center;
   }
   .booster .copy { order: 1; text-align: left; }
   .booster .stage { order: 2; justify-content: flex-end; }
@@ -349,15 +362,8 @@
 
 
 
-  /* Portrait / narrow: keep mandatory snap points, but allow taller content to scroll. */
+  /* Portrait/narrow: fixed-height slides, with copy centered over the video. */
   @media (max-width: 900px), (orientation: portrait) {
-    .snap {
-      height: auto;
-      min-height: 100vh;
-      min-height: 100dvh;
-      overflow: visible;
-      /* Inherit scroll-snap-align:start and scroll-snap-stop:always. */
-    }
     .game {
       display: block;
       position: relative;
@@ -370,9 +376,10 @@
       z-index: 2;
       text-align: center;
       justify-content: center;
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding: calc(56px + 3vh) 6vw calc(64px + 3vh);
+      height: 100%;
+      min-height: 0;
+      padding: calc(var(--nav-height, 48px) + 14px) 6vw
+               calc(var(--footer-height, 48px) + 14px);
       background: linear-gradient(
         180deg,
         rgba(18, 12, 34, 0.72) 0%,
@@ -386,7 +393,7 @@
       position: absolute;
       inset: 0;
       z-index: 0;
-      height: auto;
+      height: 100%;
       overflow: hidden;
       pointer-events: none;
     }
@@ -396,6 +403,8 @@
     .grim .status {
       align-self: center;
     }
+    /* Long localized status labels must not extend beyond narrow screens. */
+    .status { white-space: normal; overflow-wrap: anywhere; text-align: center; }
     .stage video {
       position: absolute;
       top: 0;
@@ -416,6 +425,23 @@
     }
     .copy h2 { font-size: clamp(1.35rem, 6.5vw, 1.85rem); font-weight: 500; }
     .copy p { font-size: clamp(0.88rem, 3.6vw, 1rem); }
+  }
+
+  /* Reduce decorative whitespace before shrinking text on short screens. */
+  @media (max-height: 680px) {
+    .logo img { margin-bottom: 2vh; }
+    .company p { margin: 0.18em 0; line-height: 1.55; }
+    .hint { margin-top: 2vh; }
+    .eyebrow { margin-bottom: 0.45rem; }
+    .genre, .status { margin-bottom: 0.65rem; }
+    .copy p { margin-bottom: 0.45rem; line-height: 1.5; }
+    .cta { margin-top: 0.85rem; }
+  }
+  /* Last resort on very small screens: scroll ONLY the text within its slide. */
+  .content-scroll {
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+    scrollbar-width: thin;
   }
 
   @media (max-width: 600px) {
@@ -503,7 +529,7 @@
 
   <!-- 2. Booster Up: text left / video right -->
   <section class="snap game booster" id="boosterup" data-focus-x="0.72">
-    <div class="copy">
+    <div class="copy"><div class="copy-inner">
       <div class="eyebrow">01 / Arcade</div>
       <h2>BOOSTER UP</h2>
       <p class="genre">
@@ -557,7 +583,7 @@
         <span class="lang-zh">Google Play</span>
         <span class="lang-zh-tw">Google Play</span>
       </a>
-    </div>
+    </div></div>
     <div class="stage" aria-hidden="true">
       <video
         src="https://studio-fingergames.github.io/bootserup.mp4"
@@ -573,7 +599,7 @@
         src="https://studio-fingergames.github.io/grimdungeon.mp4"
         autoplay muted loop playsinline preload="metadata"></video>
     </div>
-    <div class="copy">
+    <div class="copy"><div class="copy-inner">
       <div class="eyebrow">02 / Roguelike</div>
       <h2>GRIM DUNGEON</h2>
       <p class="genre">HOLLOW SURVIVOR ·
@@ -625,7 +651,7 @@
         <p>分支地圖、故事與演出——</p>
         <p>跳出手機常見套路的全新倖存者類遊戲。</p>
       </div>
-    </div>
+    </div></div>
   </section>
 
   <footer class="site">
@@ -775,6 +801,128 @@
       syncVisibleSection();
     });
   }
+
+  // Measure header/footer so the text center stays in the actually visible area.
+  // Preserve all translations; fit via spacing first (CSS) then scale only if needed.
+  const fitBlocks = [
+    { section: sections[0], block: document.querySelector('.company-inner') },
+    ...gameSections.map(section => ({ section, block: section.querySelector('.copy-inner') }))
+  ];
+  let fitQueued = false;
+  function fitContent() {
+    const header = document.querySelector('.top-nav');
+    const footer = document.querySelector('footer.site');
+    document.documentElement.style.setProperty('--nav-height', `${Math.ceil(header.getBoundingClientRect().height)}px`);
+    document.documentElement.style.setProperty('--footer-height', `${Math.ceil(footer.getBoundingClientRect().height)}px`);
+
+    fitBlocks.forEach(({ section, block }) => {
+      if (!block) return;
+      block.classList.remove('content-scroll');
+      block.style.removeProperty('height');
+      block.style.setProperty('--content-fit', '1');
+      const wrapper = section.classList.contains('company') ? section : section.querySelector('.copy');
+      const style = getComputedStyle(wrapper);
+      const available = Math.max(0, wrapper.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom));
+      const natural = block.scrollHeight;
+      if (!available || !natural) return;
+
+      const minScale = 0.80;  // Maintain readable text; overflow inside the panel if smaller is needed.
+      const scale = Math.max(minScale, Math.min(1, (available - 2) / natural));
+      block.style.setProperty('--content-fit', scale.toFixed(3));
+      if (natural * scale > available + 1) {
+        block.style.height = `${Math.max(1, Math.floor(available / scale))}px`;
+        block.classList.add('content-scroll');
+      }
+    });
+  }
+  function scheduleContentFit() {
+    if (fitQueued) return;
+    fitQueued = true;
+    requestAnimationFrame(() => {
+      fitQueued = false;
+      fitContent();
+    });
+  }
+  window.addEventListener('resize', scheduleContentFit, { passive: true });
+  window.addEventListener('load', scheduleContentFit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleContentFit);
+  scheduleContentFit();
+
+  // No competing native CSS snap: scroll naturally and settle once momentum stops.
+  // scrollend includes touch inertia on supported browsers; otherwise use idle fallback.
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const hasScrollEnd = 'onscrollend' in window;
+  let touchHeld = false;
+  let settleTimer = null;
+  let snapTarget = null;
+
+  function positionOf(section) {
+    return Math.round(section.getBoundingClientRect().top + window.scrollY);
+  }
+  function stopProgrammaticMove() {
+    if (snapTarget === null) return;
+    snapTarget = null;
+    // Cancel an in-progress smooth scroll immediately when the user intervenes.
+    window.scrollTo({ top: window.scrollY, behavior: 'instant' });
+  }
+  function scrollToSection(section) {
+    const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const target = Math.max(0, Math.min(positionOf(section), maxY));
+    if (Math.abs(window.scrollY - target) < 2) return;
+    snapTarget = target;
+    window.scrollTo({ top: target, behavior: prefersReducedMotion.matches ? 'instant' : 'smooth' });
+  }
+  function settleNearest() {
+    if (touchHeld) return;
+    if (snapTarget !== null) {
+      // Ignore scrollend events produced by our own smooth scrolling.
+      if (Math.abs(window.scrollY - snapTarget) < 3) snapTarget = null;
+      return;
+    }
+    let nearest = sections[0];
+    let distance = Infinity;
+    for (const section of sections) {
+      const d = Math.abs(positionOf(section) - window.scrollY);
+      if (d < distance) { distance = d; nearest = section; }
+    }
+    if (distance >= 3) scrollToSection(nearest);
+  }
+  function scheduleSettleFallback() {
+    if (hasScrollEnd) return;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(settleNearest, 190);
+  }
+  function onManualInput() {
+    clearTimeout(settleTimer);
+    stopProgrammaticMove();
+  }
+  window.addEventListener('wheel', onManualInput, { passive: true });
+  window.addEventListener('touchstart', () => { touchHeld = true; onManualInput(); }, { passive: true });
+  window.addEventListener('touchend', () => { touchHeld = false; scheduleSettleFallback(); }, { passive: true });
+  window.addEventListener('touchcancel', () => { touchHeld = false; scheduleSettleFallback(); }, { passive: true });
+  window.addEventListener('keydown', (event) => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) onManualInput();
+  });
+  if (hasScrollEnd) window.addEventListener('scrollend', settleNearest);
+  window.addEventListener('scroll', scheduleSettleFallback, { passive: true });
+
+  // Tabs and swipes share exactly the same three anchor positions.
+  navLinks.forEach(link => {
+    link.addEventListener('click', (event) => {
+      const section = sections.find(item => item.id === link.dataset.nav);
+      if (!section) return;
+      event.preventDefault();
+      stopProgrammaticMove();
+      clearTimeout(settleTimer);
+      history.pushState(null, '', `#${section.id}`);
+      setActiveNav(section.id);
+      scrollToSection(section);
+    });
+  });
+  window.addEventListener('popstate', () => {
+    const section = sections.find(item => `#${item.id}` === location.hash);
+    if (section) { stopProgrammaticMove(); scrollToSection(section); }
+  });
 
   window.addEventListener('scroll', scheduleVisibleSectionSync, { passive: true });
   window.addEventListener('resize', scheduleVisibleSectionSync);
