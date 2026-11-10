@@ -392,14 +392,26 @@
     color: var(--ink-soft);
     margin-bottom: 0.85rem;
   }
+  .copy-inner { --title-size: clamp(1.45rem, 2.8vw, 2.15rem); }
   .copy h2 {
     font-family: "IBM Plex Sans KR", Syne, sans-serif;
     font-weight: 500;
-    font-size: clamp(1.45rem, 2.8vw, 2.15rem);
+    font-size: var(--title-size);
     line-height: 1.2;
     letter-spacing: 0.02em;
     color: var(--white);
     margin: 0 0 0.45rem;
+  }
+  /* Subtitle tied to the title above it (e.g. HOLLOW SURVIVOR).
+     Size/tracking measured so its width matches "GRIM DUNGEON":
+     HOLLOW SURVIVOR at 0.585x title size with 0.3em tracking. */
+  .subtitle {
+    margin: -0.4rem -0.3em 0.75rem 0;   /* pull up to the title; cancel trailing tracking */
+    font-size: calc(var(--title-size) * 0.585);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.3em;
+    color: #d3dae4;                      /* a touch grayer than the title */
   }
   .genre {
     margin: 0 0 1.35rem;
@@ -553,7 +565,7 @@
       left: 0;
       right: auto;
     }
-    .copy h2 { font-size: clamp(1.35rem, 6.5vw, 1.85rem); font-weight: 500; }
+    .copy-inner { --title-size: clamp(1.35rem, 6.5vw, 1.85rem); }
     .copy p { font-size: clamp(0.88rem, 3.6vw, 1rem); }
   }
 
@@ -735,7 +747,8 @@
     <div class="copy"><div class="copy-inner">
       <div class="eyebrow">02 / Roguelike</div>
       <h2>GRIM DUNGEON</h2>
-      <p class="genre">HOLLOW SURVIVOR ·
+      <div class="subtitle">HOLLOW SURVIVOR</div>
+      <p class="genre">
         <span class="lang-ko">로그라이크 액션</span>
         <span class="lang-en">Roguelike Action</span>
         <span class="lang-ja">ローグライクアクション</span>
